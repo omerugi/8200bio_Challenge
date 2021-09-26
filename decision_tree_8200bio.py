@@ -184,14 +184,6 @@ class DecisionTreeTrainer:
     def preprocess_data(self, data):
         original = data.copy()
 
-        y_mask = data['pain.pain_type'].isna()
-        index_train_pain = np.asarray(y_mask[y_mask == False].index)
-        index_test_pain = np.asarray(y_mask[y_mask == True].index)
-
-        y_mask_pain = data['location.coverage'].isna()
-        index_train = np.asarray(y_mask_pain[y_mask_pain == False].index)
-        index_test = np.asarray(y_mask_pain[y_mask_pain == True].index)
-
         mask = data.isnull()
         data = data.fillna('unknown')
 
@@ -216,8 +208,7 @@ class DecisionTreeTrainer:
 
         # scaling the numric data
         scaler = MinMaxScaler()
-        data[['duration.days', 'temperature', 'age']] = scaler.fit_transform(
-            data[['duration.days', 'temperature', 'age']])
+        data[['duration.days', 'temperature', 'age']] = scaler.fit_transform( data[['duration.days', 'temperature', 'age']])
 
         ## Working ver - 43%
         #data.replace({False: 0, True: 1}, inplace=True)
@@ -226,41 +217,26 @@ class DecisionTreeTrainer:
         X = data.drop('diagnosis', axis=1)
         y = data['diagnosis']
 
-        # split data into train & test groups
-        inputs_train, inputs_test, outputs_train, outputs_test = sklearn.model_selection.train_test_split(X, y,
-                                                                                                          test_size=0.1,
-                                                                                                          random_state=rng,
-                                                                                                          stratify=y)
-
-        train = pd.concat([inputs_train, outputs_train], axis=1)
-        train.columns = data.columns
-        test = pd.concat([inputs_test, outputs_test], axis=1)
-        test.columns = data.columns
-
         # train model to assess feature importance
         model = tree.DecisionTreeClassifier(random_state=rng)
-        model.fit(inputs_train, self.OneHot(outputs_train))
+        model.fit(X, self.OneHot(y))
         dfscores = pd.DataFrame(model.feature_importances_)
-        dfcolumns = pd.DataFrame(inputs_train.columns)
+        dfcolumns = pd.DataFrame(X.columns)
         featureScores = pd.concat([dfcolumns, dfscores], axis=1)
         featureScores.columns = ['Specs', 'Score']  # naming the dataframe columns
 
         feture_n = 88
-        # featureScores.nlargest(feture_n, 'Score')['Specs'].to_csv("88feacture.csv")
-        inputs_train = inputs_train[featureScores.nlargest(feture_n, 'Score')['Specs']]
-        inputs_test = inputs_test[featureScores.nlargest(feture_n, 'Score')['Specs']]
-
-        train = pd.concat([inputs_train, outputs_train], axis=1)
-        test = pd.concat([inputs_test, outputs_test], axis=1)
-        return train, test
+        X = X[featureScores.nlargest(feture_n, 'Score')['Specs']]
+        t = pd.concat([X,y],axis=1)
+        return t
 
     def train(self, inputs, outputs):
-        inputs = pd.get_dummies(inputs, columns= list(set(num_col) & set(inputs.columns)))
+        #inputs = pd.get_dummies(inputs, columns= list(set(num_col) & set(inputs.columns)))
         self.model.fit(inputs, self.OneHot(outputs))
         self.save_model()
 
     def evaluate(self, inputs, outputs):
-        inputs = pd.get_dummies(inputs, columns=list(set(num_col) & set(inputs.columns)))
+        #inputs = pd.get_dummies(inputs, columns=list(set(num_col) & set(inputs.columns)))
         y_pred = self.model.predict(inputs)
         # print(classification_report(outputs, y_pred))
         # TODO: accurately compute the amount of correct predictions over the inputs size in %
@@ -292,8 +268,14 @@ def main():
     the_tree = DecisionTreeTrainer()
 
     if do_train:
-        train, test = the_tree.load_training_data()
-
+        data = the_tree.load_training_data()
+        #data = pd.get_dummies(data, columns=list(set(num_col) & set(data.columns)))
+        # split data into train & test groups
+        inputs_train, inputs_test, outputs_train, outputs_test = sklearn.model_selection.train_test_split(data.drop('diagnosis',axis=1), data['diagnosis'],
+                                                                                                          test_size=0.1,
+                                                                                                          random_state=rng,
+                                                                                                          stratify=data['diagnosis'])
+        train = pd.concat([inputs_train,outputs_train],axis=1)
         # training data agmuantion
         np.random.seed(32)
         for d in train['diagnosis'].value_counts().index:
@@ -307,10 +289,8 @@ def main():
 
         # train and save model
         the_tree.train(train.drop('diagnosis', axis=1), train['diagnosis'])
-
-        print(train.shape)
         # evaluate on test group
-        print('accuracy', the_tree.evaluate(test.drop('diagnosis', axis=1), test['diagnosis']))
+        print('accuracy', the_tree.evaluate(inputs_test, outputs_test))
 
     else:  # evaluate
         the_tree.load_model()
