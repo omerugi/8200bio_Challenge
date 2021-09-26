@@ -255,11 +255,12 @@ class DecisionTreeTrainer:
         return train, test
 
     def train(self, inputs, outputs):
-        inputs = pd.get_dummies(inputs, columns=num_col)
+        inputs = pd.get_dummies(inputs, columns= list(set(num_col) & set(inputs.columns)))
         self.model.fit(inputs, self.OneHot(outputs))
         self.save_model()
 
     def evaluate(self, inputs, outputs):
+        inputs = pd.get_dummies(inputs, columns=list(set(num_col) & set(inputs.columns)))
         y_pred = self.model.predict(inputs)
         # print(classification_report(outputs, y_pred))
         # TODO: accurately compute the amount of correct predictions over the inputs size in %
