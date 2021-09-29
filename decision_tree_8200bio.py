@@ -184,39 +184,40 @@ class DecisionTreeTrainer:
     def preprocess_data(self, data):
         original = data.copy()
 
+        #lebelEncoder
         mask = data.isnull()
         data = data.fillna('unknown')
-
-        ## Working ver - 43%
-        # for str in ['diagnosis', 'topography', 'location.coverage', 'size', 'shape', 'pain.pain_type', 'gender', 'lossOfHair.type', 'quantity']:
-        #     data[str] = LabelEncoder().fit_transform(data[str])
-
-        # catgorial data encoding
-        for str in num_col:
+        for str in ['diagnosis', 'topography', 'location.coverage', 'size', 'shape', 'pain.pain_type', 'gender', 'lossOfHair.type', 'quantity']:
             data[str] = LabelEncoder().fit_transform(data[str])
 
-        for str in ord_col:
-            data[str] = OrdinalEncoder().fit_transform(data[str].to_numpy().reshape(-1,1))
-
-        data["diagnosis"] = LabelEncoder().fit_transform(data["diagnosis"])
+        # catgorial data encoding
+        # for str in num_col:
+        #     data[str] = LabelEncoder().fit_transform(data[str])
+        #
+        # for str in ord_col:
+        #     data[str] = OrdinalEncoder().fit_transform(data[str].to_numpy().reshape(-1,1))
+        #
+        # data["diagnosis"] = LabelEncoder().fit_transform(data["diagnosis"])
 
         # Return original Nan values
         data = data.where(~mask, original)
 
-        imputer = KNNImputer(n_neighbors=18, weights='distance')
-        data = pd.DataFrame(imputer.fit_transform(data))
-        data.columns = original.columns
 
         # scaling the numric data
         scaler = MinMaxScaler()
         data[['duration.days', 'temperature', 'age']] = scaler.fit_transform( data[['duration.days', 'temperature', 'age']])
 
         ## Working ver - 43%
-        #data.replace({False: 0, True: 1}, inplace=True)
+        data.replace({False: 0, True: 1}, inplace=True)
 
         # place holders
         X = data.drop('diagnosis', axis=1)
         y = data['diagnosis']
+
+        #knn imputer to fill nan columns
+        imputer = KNNImputer(n_neighbors=17, weights='distance')
+        X = pd.DataFrame(imputer.fit_transform(X))
+        X.columns = original.drop('diagnosis', axis=1).columns
 
         # choose inly imprtent columns
         X = X[['pain.pain_type', 'location.coverage', 'age', 'duration.days',       
@@ -265,15 +266,15 @@ class DecisionTreeTrainer:
 
 
         # train model to assess feature importance code
-        # model = tree.DecisionTreeClassifier(random_state=rng)
-        # model.fit(X, self.OneHot(y))
-        # dfscores = pd.DataFrame(model.feature_importances_)
-        # dfcolumns = pd.DataFrame(X.columns)
-        # featureScores = pd.concat([dfcolumns, dfscores], axis=1)
-        # featureScores.columns = ['Specs', 'Score']  # naming the dataframe columns
+        model = tree.DecisionTreeClassifier(random_state=rng)
+        model.fit(X, self.OneHot(y))
+        dfscores = pd.DataFrame(model.feature_importances_)
+        dfcolumns = pd.DataFrame(X.columns)
+        featureScores = pd.concat([dfcolumns, dfscores], axis=1)
+        featureScores.columns = ['Specs', 'Score']  # naming the dataframe columns
 
-        # feture_n = 88
-        # X = X[featureScores.nlargest(feture_n, 'Score')['Specs']]
+        feture_n = 50
+        X = X[featureScores.nlargest(feture_n, 'Score')['Specs']]
        
         t = pd.concat([X,y],axis=1)
         return t
