@@ -27,7 +27,7 @@ from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, MultiLabelBinari
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.impute import KNNImputer
 from sklearn.feature_selection import SelectKBest, chi2
-
+from sklearn import tree
 # from ctgan import CTGANSynthesizer
 # from torch._C import dtype
 # from torch._C import int64
@@ -150,108 +150,7 @@ ord_col = ["location.coverage"
     , "quantity"
            ]
 
-
-class DecisionTreeTrainer:
-    """ A class for training a decision tree on DermaDetect data """
-    trained_model_filename = 'trained_model.pkl'
-    data_relative_path = 'data/dd_data.csv'
-
-    def __init__(self):
-        self.main_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # TODO Fine-tune the decision tree classifier's parameters here
-        self.model = tree.DecisionTreeClassifier(random_state=rng, splitter='best')
-
-    def load_data(self, input_file):
-        data = pd.read_csv(input_file)
-        preprocessed_data = self.preprocess_data(data)
-        return preprocessed_data
-
-    def load_training_data(self):
-        input_file = os.path.join(self.main_dir, self.data_relative_path)
-        return self.load_data(input_file)
-
-    def save_model(self):
-        filename = os.path.join(self.main_dir, self.trained_model_filename)
-        print(filename)
-        with open(filename, 'wb') as f:
-            pickle.dump(self.model, f)
-
-    def load_model(self):
-        filename = os.path.join(self.main_dir, self.trained_model_filename)
-        with open(filename, 'rb') as f:
-            model = pickle.load(f)
-        self.model = model
-
-    def preprocess_data(self, data):
-        original = data.copy()
-
-        # lebelEncoder
-        mask = data.isnull()
-        data = data.fillna('unknown')
-        for str in ['diagnosis', 'topography', 'location.coverage', 'size', 'shape', 'pain.pain_type', 'gender',
-                    'lossOfHair.type', 'quantity']:
-            data[str] = LabelEncoder().fit_transform(data[str])
-
-        # Return original Nan values
-        data = data.where(~mask, original)
-
-        # scaling the numric data
-        scaler = MinMaxScaler()
-        data[['duration.days', 'temperature', 'age']] = scaler.fit_transform(
-            data[['duration.days', 'temperature', 'age']])
-
-        ## Working ver - 43%
-        data.replace({False: 0, True: 1}, inplace=True)
-
-
-        y_mask = data['pain.pain_type'].isna()
-        index_train_pain = np.asarray(y_mask[y_mask == False].index)
-        index_test_pain = np.asarray(y_mask[y_mask == True].index)
-
-        y_mask_pain = data['location.coverage'].isna()
-        index_train = np.asarray(y_mask_pain[y_mask_pain == False].index)
-        index_test = np.asarray(y_mask_pain[y_mask_pain == True].index)
-
-        # location complation
-        train = pd.DataFrame(data.to_numpy()[index_train, :], columns=data.columns)
-        x_train = train.drop('diagnosis', axis=1).drop('location.coverage', axis=1).drop('pain.pain_type',axis=1)
-        y_train = train['location.coverage']
-        test = pd.DataFrame(data.to_numpy()[index_test, :], columns=data.columns)
-        x_test = test.drop('diagnosis', axis=1).drop('location.coverage', axis=1).drop('pain.pain_type',axis=1)
-
-        from sklearn.ensemble import RandomForestClassifier
-        fill_model = RandomForestClassifier(random_state=rng,n_estimators=80)
-        fill_model.fit(x_train, y_train)
-        y_test = fill_model.predict(x_test)
-        data.loc[index_test,'location.coverage'] = y_test
-
-        # pain completion
-        train = pd.DataFrame(data.to_numpy()[index_train_pain, :], columns=data.columns)
-        x_train = train.drop('diagnosis', axis=1).drop('pain.pain_type',axis=1)
-        y_train = train['pain.pain_type']
-        test = pd.DataFrame(data.to_numpy()[index_test_pain, :], columns=data.columns)
-        x_test = test.drop('diagnosis', axis=1).drop('pain.pain_type',axis=1)
-
-        fill_model = RandomForestClassifier(random_state=rng,n_estimators=90)
-        fill_model.fit(x_train, y_train)
-        y_test = fill_model.predict(x_test)
-        data.loc[index_test_pain,'pain.pain_type'] = y_test
-
-
-
-
-        # place holders
-        X = data.drop('diagnosis', axis=1)
-        y = data['diagnosis']
-
-        # # knn imputer to fill nan columns
-        # imputer = KNNImputer(n_neighbors=17, weights='distance')
-        # X = pd.DataFrame(imputer.fit_transform(X))
-        # X.columns = original.drop('diagnosis', axis=1).columns
-
-        # choose inly imprtent columns
-        X = X[['pain.pain_type', 'location.coverage', 'age', 'duration.days',
+selected_fetuers = ['pain.pain_type', 'location.coverage', 'age', 'duration.days',
                'quantity', 'topography', 'size', 'is_color_condition_red',
                'is_color_condition_brown', 'itch', 'swelling',
                'is_primary_locations_leg', 'lossOfHair.exist', 'is_texture_scales',
@@ -293,7 +192,108 @@ class DecisionTreeTrainer:
                'is_nailsdiseases_mees__lines', 'is_nailsdiseases_terry_s_nails',
                'is_nailsdiseases_yellow_nail_syndrome', 'is_primary_locations_buttock',
                'is_secondary_locations_armpit', 'is_secondary_locations_elbow',
-               'is_secondary_locations_eyebrow']]
+               'is_secondary_locations_eyebrow']
+
+class DecisionTreeTrainer:
+    """ A class for training a decision tree on DermaDetect data """
+    trained_model_filename = 'trained_model.pkl'
+    data_relative_path = 'data/dd_data.csv'
+
+    def __init__(self):
+        self.main_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # TODO Fine-tune the decision tree classifier's parameters here
+        self.model = tree.DecisionTreeClassifier(random_state=rng, splitter='best')
+
+    def load_data(self, input_file):
+        data = pd.read_csv(input_file)
+        preprocessed_data = self.preprocess_data(data)
+        return preprocessed_data
+
+    def load_training_data(self):
+        input_file = os.path.join(self.main_dir, self.data_relative_path)
+        return self.load_data(input_file)
+
+    def save_model(self):
+        filename = os.path.join(self.main_dir, self.trained_model_filename)
+        print(filename)
+        with open(filename, 'wb') as f:
+            pickle.dump(self.model, f)
+
+    def load_model(self):
+        filename = os.path.join(self.main_dir, self.trained_model_filename)
+        with open(filename, 'rb') as f:
+            model = pickle.load(f)
+        self.model = model
+
+    def preprocess_data(self, data):
+        original = data.copy()
+
+        # lebelEncoder
+        mask = data.isnull()
+        data = data.fillna('unknown')
+        self.target_names = data['diagnosis'].unique()
+        for str in ['diagnosis', 'topography', 'location.coverage', 'size', 'shape', 'pain.pain_type', 'gender',
+                    'lossOfHair.type', 'quantity']:
+            data[str] = LabelEncoder().fit_transform(data[str])
+
+        # Return original Nan values
+        data = data.where(~mask, original)
+
+        # scaling the numric data
+        scaler = MinMaxScaler()
+        data[['duration.days', 'temperature', 'age']] = scaler.fit_transform(
+            data[['duration.days', 'temperature', 'age']])
+
+        # set boolean to zeros and ones
+        data.replace({False: 0, True: 1}, inplace=True)
+
+        y_mask = data['pain.pain_type'].isna()
+        index_train_pain = np.asarray(y_mask[y_mask == False].index)
+        index_test_pain = np.asarray(y_mask[y_mask == True].index)
+
+        y_mask_pain = data['location.coverage'].isna()
+        index_train = np.asarray(y_mask_pain[y_mask_pain == False].index)
+        index_test = np.asarray(y_mask_pain[y_mask_pain == True].index)
+
+        # location complation
+        train = pd.DataFrame(data.to_numpy()[index_train, :], columns=data.columns)
+        x_train = train.drop('diagnosis', axis=1).drop('location.coverage', axis=1).drop('pain.pain_type',axis=1)
+        y_train = train['location.coverage']
+        test = pd.DataFrame(data.to_numpy()[index_test, :], columns=data.columns)
+        x_test = test.drop('diagnosis', axis=1).drop('location.coverage', axis=1).drop('pain.pain_type',axis=1)
+
+        from sklearn.ensemble import RandomForestClassifier
+        fill_model = RandomForestClassifier(random_state=rng,n_estimators=80)
+        fill_model.fit(x_train, y_train)
+        y_test = fill_model.predict(x_test)
+        data.loc[index_test,'location.coverage'] = y_test
+
+        # pain completion
+        train = pd.DataFrame(data.to_numpy()[index_train_pain, :], columns=data.columns)
+        x_train = train.drop('diagnosis', axis=1).drop('pain.pain_type',axis=1)
+        y_train = train['pain.pain_type']
+        test = pd.DataFrame(data.to_numpy()[index_test_pain, :], columns=data.columns)
+        x_test = test.drop('diagnosis', axis=1).drop('pain.pain_type',axis=1)
+
+        fill_model = RandomForestClassifier(random_state=rng,n_estimators=90)
+        fill_model.fit(x_train, y_train)
+        y_test = fill_model.predict(x_test)
+        data.loc[index_test_pain,'pain.pain_type'] = y_test
+
+
+        # place holders
+        X = data.drop('diagnosis', axis=1)
+        y = data['diagnosis']
+
+        # - Need to use only when training model - knn imputer to fill nan columns
+        # - reduce the dimension of the data
+        # imputer = KNNImputer(n_neighbors=17, weights='distance')
+        # X = pd.DataFrame(imputer.fit_transform(X))
+        # X.columns = original.drop('diagnosis', axis=1).columns
+
+        # choose inly imprtent columns - the chosen feature after dimension reduction
+        X = X[selected_fetuers]
 
         # train model to assess feature importance code
         model = tree.DecisionTreeClassifier(random_state=rng)
@@ -310,15 +310,11 @@ class DecisionTreeTrainer:
         return t
 
     def train(self, inputs, outputs):
-        # inputs = pd.get_dummies(inputs, columns= list(set(num_col) & set(inputs.columns)))
         self.model.fit(inputs, self.OneHot(outputs))
         self.save_model()
 
     def evaluate(self, inputs, outputs):
-        # inputs = pd.get_dummies(inputs, columns=list(set(num_col) & set(inputs.columns)))
         y_pred = self.model.predict(inputs)
-        # print(classification_report(outputs, y_pred))
-        # TODO: accurately compute the amount of correct predictions over the inputs size in %
         return sklearn.metrics.accuracy_score(self.OneHot(outputs), y_pred) * 100
 
     def OneHot(self, data):
@@ -326,6 +322,19 @@ class DecisionTreeTrainer:
         y = data.to_numpy().reshape(-1, 1)
         y_hot = ohe.fit_transform(y).toarray()
         return y_hot
+
+    def visualization(self, x, y):
+        import matplotlib.pyplot as plt
+        ## Simple tree plot
+        fig = plt.figure(figsize=(50, 50))
+        _ = tree.plot_tree(self.model,
+               class_names=self.target_names,
+               rounded=True,
+               filled = True)
+        fig.savefig("decistion_tree.png")
+
+        pass
+
 
 
 ################################################################################
@@ -338,7 +347,6 @@ def get_cmd_args():
     return args.parse_args()
 
 
-# from imblearn.over_sampling import SMOTENC
 ################################################################################
 def main():
     args = get_cmd_args()
@@ -384,6 +392,10 @@ def main():
         test_accuracy_percent = the_tree.evaluate(
             test_data.drop('diagnosis', axis=1), test_data['diagnosis'])
         print("Test accuracy: {:.2f}%".format(test_accuracy_percent))  # in [0-100], eg 99.99%
+        the_tree.visualization( test_data.drop('diagnosis', axis=1), test_data['diagnosis'])
+
+
+
 
 
 ################################################################################
