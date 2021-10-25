@@ -16,7 +16,9 @@ Zeros & Ones – Replace the values of Booleans.
 
 Data Completion – In the features ‘location_covrage’ and ‘pain.pain_type’ there was missing data, we tried RandomForest and KNN imputer to fill in the missing data. The samples that contained the data = train, the samples with missing data = test. The RandomForest was selected, performed better.
 
-Feature reduction – using a Decision Tree model we found the 50 most important features, after running it we had a list of the most important features (rf_selected_features). After finding those, every call to the preprocessing cleaned the unnecessary features based on the rf_selected_features (both in train and in test).
+Feature/Demention reduction – using a Decision Tree model we found the 50 most important features, after running it we had a list of the most important features (rf_selected_features). After finding those, every call to the preprocessing cleaned the unnecessary features based on the rf_selected_features (both in train and in test).
+
+Data Generator - creating new data based on the given sample's statistics and distribution.
 
 ## When evaluating the model : 
 Split test train – did it in an equal manner between the classes, so the train will “see” all the possible labels.   
