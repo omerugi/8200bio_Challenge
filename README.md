@@ -3,7 +3,7 @@
 
 ## 🥈🏆 Awarded 2nd place in the challenge 🏆🥈
 
-Out team: Roi Peleg, Lilach Mor, Omer Rugi
+Our team: Roi Peleg, Lilach Mor, Omer Rugi
 
 ## About the challenge: 
  8200Bio_Data_Challenge 3rd event the was in collaboration with DermaDetect!
