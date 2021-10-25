@@ -6,7 +6,7 @@
 Our team: Roi Peleg, Lilach Mor, Omer Rugi
 
 ## About the challenge: 
- 8200Bio_Data_Challenge 3rd event the was in collaboration with DermaDetect!
+ 8200Bio_Data_Challenge 3rd event in collaboration with DermaDetect!
 
 Given a small batch of tabular medical data and a Decision tree model, try to improve the accuracy of the model while keeping the features readable so it could be presented as a "Tree" and a doctor could make sense out of it.
 
