@@ -1,8 +1,14 @@
-# public_8200bio_challenge
+![image](https://user-images.githubusercontent.com/57361655/138691692-3c6b162b-19c0-475a-ab1a-3dd031459426.png)
+![image](https://user-images.githubusercontent.com/57361655/138691958-15a944da-c5fa-491a-8fba-2d8195c957d6.png)
 
-Name: Roi Peleg, Lilach Mor, Omer Rugi
+## 🥈🏆 Awarded 2nd place in the challenge 🏆🥈
 
-Email:  lilach199612@gmail.com ,omerihay@gmail.com
+Out team: Roi Peleg, Lilach Mor, Omer Rugi
+
+## About the challenge: 
+ 8200Bio_Data_Challenge 3rd event the was in collaboration with DermaDetect!
+
+Given a small batch of tabular medical data and a Decision tree model, try to improve the accuracy of the model while keeping the features readable so it could be presented as a "Tree" and a doctor could make sense out of it.
 
 ## In our preprocessing we did:
 
